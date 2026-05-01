@@ -72,6 +72,29 @@ def login():
     return jsonify({"message": "Invalid email or password"}), 401
 
 
+# 🎵 Songs route
+@app.route("/songs", methods=["GET"])
+def get_songs():
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM songs")
+    songs = cursor.fetchall()
+    conn.close()
+
+    # Convert to JSON
+    song_list = []
+    for song in songs:
+        song_list.append({
+            "id": song[0],
+            "title": song[1],
+            "artist": song[2],
+            "file_path": song[3]
+        })
+
+    return jsonify(song_list)
+
+
 # Run server LAST
 if __name__ == "__main__":
     app.run(debug=True)
