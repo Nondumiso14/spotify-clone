@@ -1,9 +1,8 @@
 import { useState } from "react";
 
-function Search() {
+function Search({ currentSong, setCurrentSong }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
-  const [currentSong, setCurrentSong] = useState(null);
   const [message, setMessage] = useState("");
   const [hasSearched, setHasSearched] = useState(false);
 
@@ -14,7 +13,6 @@ function Search() {
     setTimeout(() => setMessage(""), 3000);
   };
 
-  // Search backend when user types
   const handleSearch = async (e) => {
     const value = e.target.value;
     setQuery(value);
@@ -75,14 +73,12 @@ function Search() {
   return (
     <div style={{
       padding: "20px",
-      paddingBottom: "160px",
       backgroundColor: "#121212",
       color: "white",
       minHeight: "100vh",
     }}>
       <h1>Search 🔍</h1>
 
-      {/* Toast message */}
       {message && (
         <div style={{
           background: "#1DB954",
@@ -97,7 +93,6 @@ function Search() {
         </div>
       )}
 
-      {/* Search input */}
       <input
         type="text"
         placeholder="Search songs or artists..."
@@ -117,21 +112,16 @@ function Search() {
         }}
       />
 
-      {/* No results message */}
       {hasSearched && results.length === 0 && (
-        <p style={{ color: "#aaa" }}>
-          No songs found for "{query}".
-        </p>
+        <p style={{ color: "#aaa" }}>No songs found for "{query}".</p>
       )}
 
-      {/* Prompt before searching */}
       {!hasSearched && (
         <p style={{ color: "#aaa", fontSize: "14px" }}>
           Start typing to search through all songs and artists.
         </p>
       )}
 
-      {/* Results */}
       {results.map((song) => {
         const isPlaying = currentSong?.id === song.id;
         return (
@@ -177,42 +167,6 @@ function Search() {
           </div>
         );
       })}
-
-      {/* Player bar */}
-      {currentSong && (
-        <div style={{
-          position: "fixed",
-          bottom: 0,
-          left: "240px",
-          right: 0,
-          backgroundColor: "#181818",
-          borderTop: "1px solid #1DB954",
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-        }}>
-          <div style={{ minWidth: "180px" }}>
-            <p style={{ margin: 0, fontWeight: "600", fontSize: "14px" }}>
-              {currentSong.title}
-            </p>
-            <p style={{ margin: 0, color: "#aaa", fontSize: "12px" }}>
-              {currentSong.artist}
-            </p>
-          </div>
-          <audio
-            controls
-            autoPlay
-            key={currentSong.id}
-            style={{ flex: 1, height: "36px" }}
-          >
-            <source
-              src={`http://localhost:3000/${currentSong.file_path}`}
-              type="audio/mpeg"
-            />
-          </audio>
-        </div>
-      )}
     </div>
   );
 }

@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-function Library() {
+function Library({ currentSong, setCurrentSong }) {
   const [librarySongs, setLibrarySongs] = useState([]);
-  const [currentSong, setCurrentSong] = useState(null);
   const [message, setMessage] = useState("");
 
-  // Load from localStorage on mount
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem("library")) || [];
     setLibrarySongs(saved);
@@ -19,6 +17,9 @@ function Library() {
 
   const playSong = (song) => {
     setCurrentSong(song);
+    const recent = JSON.parse(localStorage.getItem("recentlyPlayed")) || [];
+    const updated = [song, ...recent.filter((s) => s.id !== song.id)];
+    localStorage.setItem("recentlyPlayed", JSON.stringify(updated.slice(0, 10)));
   };
 
   const removeSong = (songId) => {
@@ -31,14 +32,12 @@ function Library() {
   return (
     <div style={{
       padding: "20px",
-      paddingBottom: "160px",
       backgroundColor: "#121212",
       color: "white",
       minHeight: "100vh",
     }}>
       <h1>Your Library 📚</h1>
 
-      {/* Toast message */}
       {message && (
         <div style={{
           background: "#1DB954",
@@ -107,42 +106,6 @@ function Library() {
             );
           })}
         </>
-      )}
-
-      {/* Player bar */}
-      {currentSong && (
-        <div style={{
-          position: "fixed",
-          bottom: 0,
-          left: "240px",
-          right: 0,
-          backgroundColor: "#181818",
-          borderTop: "1px solid #1DB954",
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-        }}>
-          <div style={{ minWidth: "180px" }}>
-            <p style={{ margin: 0, fontWeight: "600", fontSize: "14px" }}>
-              {currentSong.title}
-            </p>
-            <p style={{ margin: 0, color: "#aaa", fontSize: "12px" }}>
-              {currentSong.artist}
-            </p>
-          </div>
-          <audio
-            controls
-            autoPlay
-            key={currentSong.id}
-            style={{ flex: 1, height: "36px" }}
-          >
-            <source
-              src={`http://localhost:3000/${currentSong.file_path}`}
-              type="audio/mpeg"
-            />
-          </audio>
-        </div>
       )}
     </div>
   );

@@ -1,15 +1,13 @@
 import { useEffect, useState } from "react";
 
-function Home() {
+function Home({ currentSong, setCurrentSong }) {
   const [songs, setSongs] = useState([]);
-  const [currentSong, setCurrentSong] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [favorites, setFavorites] = useState([]);
   const [message, setMessage] = useState("");
 
   const userId = localStorage.getItem("user_id");
 
-  // Fetch all songs on load
   useEffect(() => {
     fetch("http://127.0.0.1:5000/songs")
       .then((res) => res.json())
@@ -17,7 +15,6 @@ function Home() {
       .catch((err) => console.error("Error fetching songs:", err));
   }, []);
 
-  // Fetch user's favorites on load
   useEffect(() => {
     if (!userId) return;
     fetch(`http://127.0.0.1:5000/favorites/${userId}`)
@@ -26,13 +23,11 @@ function Home() {
       .catch((err) => console.error("Error fetching favorites:", err));
   }, [userId]);
 
-  // Show a short message instead of alert
   const showMessage = (msg) => {
     setMessage(msg);
     setTimeout(() => setMessage(""), 3000);
   };
 
-  // Play song + save to recently played
   const playSong = (song) => {
     setCurrentSong(song);
     const recent = JSON.parse(localStorage.getItem("recentlyPlayed")) || [];
@@ -40,7 +35,6 @@ function Home() {
     localStorage.setItem("recentlyPlayed", JSON.stringify(updated.slice(0, 10)));
   };
 
-  // Add to library (localStorage)
   const addToLibrary = (song) => {
     const library = JSON.parse(localStorage.getItem("library")) || [];
     const alreadyIn = library.some((s) => s.id === song.id);
@@ -52,17 +46,13 @@ function Home() {
     showMessage(`"${song.title}" added to your library!`);
   };
 
-  // Toggle favorite — saves to database
   const toggleFavorite = async (song) => {
     if (!userId) {
       showMessage("Please log in to add favorites.");
       return;
     }
-
     const isFav = favorites.includes(song.id);
-
     if (isFav) {
-      // Remove from favorites
       await fetch("http://127.0.0.1:5000/favorites", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -71,7 +61,6 @@ function Home() {
       setFavorites(favorites.filter((id) => id !== song.id));
       showMessage(`"${song.title}" removed from favorites.`);
     } else {
-      // Add to favorites
       await fetch("http://127.0.0.1:5000/favorites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,7 +71,6 @@ function Home() {
     }
   };
 
-  // Filter songs by search term
   const filteredSongs = songs.filter(
     (song) =>
       song.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -92,14 +80,12 @@ function Home() {
   return (
     <div style={{
       padding: "20px",
-      paddingBottom: "160px",
       backgroundColor: "#121212",
       color: "white",
       minHeight: "100vh",
     }}>
       <h1>Home 🎵</h1>
 
-      {/* Toast message */}
       {message && (
         <div style={{
           background: "#1DB954",
@@ -114,7 +100,6 @@ function Home() {
         </div>
       )}
 
-      {/* Search bar */}
       <input
         type="text"
         placeholder="Search songs or artists..."
@@ -133,7 +118,6 @@ function Home() {
         }}
       />
 
-      {/* Song list */}
       {filteredSongs.length === 0 ? (
         <p style={{ color: "#aaa" }}>No songs found.</p>
       ) : (
@@ -162,17 +146,12 @@ function Home() {
               </div>
 
               <div style={{ display: "flex", gap: "8px" }}>
-                {/* Play */}
                 <button onClick={() => playSong(song)} style={btnStyle("#1DB954", "#000")}>
                   {isPlaying ? "Playing ▶" : "Play ▶"}
                 </button>
-
-                {/* Library */}
                 <button onClick={() => addToLibrary(song)} style={btnStyle("#282828", "#fff", "#555")}>
                   + Library
                 </button>
-
-                {/* Favorite */}
                 <button
                   onClick={() => toggleFavorite(song)}
                   style={btnStyle(isFav ? "#1DB954" : "#282828", isFav ? "#000" : "#fff", isFav ? "none" : "#555")}
@@ -184,47 +163,10 @@ function Home() {
           );
         })
       )}
-
-      {/* Player bar */}
-      {currentSong && (
-        <div style={{
-          position: "fixed",
-          bottom: 0,
-          left: "240px",
-          right: 0,
-          backgroundColor: "#181818",
-          borderTop: "1px solid #1DB954",
-          padding: "12px 24px",
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-        }}>
-          <div style={{ minWidth: "180px" }}>
-            <p style={{ margin: 0, fontWeight: "600", fontSize: "14px" }}>
-              {currentSong.title}
-            </p>
-            <p style={{ margin: 0, color: "#aaa", fontSize: "12px" }}>
-              {currentSong.artist}
-            </p>
-          </div>
-          <audio
-            controls
-            autoPlay
-            key={currentSong.id}
-            style={{ flex: 1, height: "36px" }}
-          >
-            <source
-              src={`http://localhost:3000/${currentSong.file_path}`}
-              type="audio/mpeg"
-            />
-          </audio>
-        </div>
-      )}
     </div>
   );
 }
 
-// Reusable button style helper
 const btnStyle = (bg, color, border = "none") => ({
   backgroundColor: bg,
   color: color,
