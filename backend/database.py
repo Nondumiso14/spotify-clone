@@ -7,13 +7,14 @@ def create_tables():
     conn = connect_db()
     cursor = conn.cursor()
 
-    # Users table
+    # Users table — role column added
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE,
         password TEXT,
-        display_name TEXT
+        display_name TEXT,
+        role TEXT DEFAULT 'user'
     )
     """)
 
@@ -23,7 +24,8 @@ def create_tables():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
         artist TEXT,
-        file_path TEXT
+        file_path TEXT,
+        genre TEXT DEFAULT 'Unknown'
     )
     """)
 

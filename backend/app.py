@@ -51,7 +51,7 @@ def login():
     conn = sqlite3.connect("spotify.db")
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, password, display_name FROM users WHERE email = ?", (email,)
+        "SELECT id, password, display_name, role FROM users WHERE email = ?", (email,)
     )
     user = cursor.fetchone()
     conn.close()
@@ -62,7 +62,8 @@ def login():
             "message": "Login successful",
             "user_id": user[0],
             "display_name": user[2],
-            "email": email
+            "email": email,
+            "role": user[3]
         })
 
     return jsonify({"message": "Invalid email or password"}), 401
@@ -85,7 +86,13 @@ def get_songs():
     conn.close()
 
     return jsonify([
-        {"id": s[0], "title": s[1], "artist": s[2], "file_path": s[3]}
+        {
+            "id": s[0],
+            "title": s[1],
+            "artist": s[2],
+            "file_path": s[3],
+            "genre": s[4] if len(s) > 4 else "Unknown"
+        }
         for s in songs
     ])
 
@@ -97,14 +104,20 @@ def search_songs():
     conn = sqlite3.connect("spotify.db")
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT * FROM songs WHERE title LIKE ? OR artist LIKE ?",
-        (f"%{query}%", f"%{query}%")
+        "SELECT * FROM songs WHERE title LIKE ? OR artist LIKE ? OR genre LIKE ?",
+        (f"%{query}%", f"%{query}%", f"%{query}%")
     )
     songs = cursor.fetchall()
     conn.close()
 
     return jsonify([
-        {"id": s[0], "title": s[1], "artist": s[2], "file_path": s[3]}
+        {
+            "id": s[0],
+            "title": s[1],
+            "artist": s[2],
+            "file_path": s[3],
+            "genre": s[4] if len(s) > 4 else "Unknown"
+        }
         for s in songs
     ])
 
@@ -140,7 +153,7 @@ def get_favorites(user_id):
     conn = sqlite3.connect("spotify.db")
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT songs.id, songs.title, songs.artist, songs.file_path
+        SELECT songs.id, songs.title, songs.artist, songs.file_path, songs.genre
         FROM favorites
         JOIN songs ON favorites.song_id = songs.id
         WHERE favorites.user_id = ?
@@ -149,7 +162,13 @@ def get_favorites(user_id):
     conn.close()
 
     return jsonify([
-        {"id": s[0], "title": s[1], "artist": s[2], "file_path": s[3]}
+        {
+            "id": s[0],
+            "title": s[1],
+            "artist": s[2],
+            "file_path": s[3],
+            "genre": s[4] if len(s) > 4 else "Unknown"
+        }
         for s in songs
     ])
 
@@ -178,15 +197,237 @@ def get_profile(user_id):
     conn = sqlite3.connect("spotify.db")
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, email, display_name FROM users WHERE id = ?", (user_id,)
+        "SELECT id, email, display_name, role FROM users WHERE id = ?", (user_id,)
     )
     user = cursor.fetchone()
     conn.close()
 
     if user:
-        return jsonify({"id": user[0], "email": user[1], "display_name": user[2]})
+        return jsonify({
+            "id": user[0],
+            "email": user[1],
+            "display_name": user[2],
+            "role": user[3]
+        })
     return jsonify({"message": "User not found"}), 404
 
 
+# ── Create a playlist ─────────────────────────────────────
+@app.route("/playlists", methods=["POST"])
+def create_playlist():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    name = data.get("name")
+
+    if not user_id or not name:
+        return jsonify({"message": "user_id and name required"}), 400
+
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO playlists (user_id, name) VALUES (?, ?)",
+        (user_id, name)
+    )
+    conn.commit()
+    playlist_id = cursor.lastrowid
+    conn.close()
+
+    return jsonify({"message": "Playlist created", "id": playlist_id})
+
+
+# ── Get user's playlists ──────────────────────────────────
+@app.route("/playlists/<int:user_id>", methods=["GET"])
+def get_playlists(user_id):
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, name FROM playlists WHERE user_id = ?", (user_id,)
+    )
+    playlists = cursor.fetchall()
+    conn.close()
+
+    return jsonify([
+        {"id": p[0], "name": p[1]}
+        for p in playlists
+    ])
+
+
+# ── Add song to playlist ──────────────────────────────────
+@app.route("/playlists/add-song", methods=["POST"])
+def add_song_to_playlist():
+    data = request.get_json()
+    playlist_id = data.get("playlist_id")
+    song_id = data.get("song_id")
+
+    if not playlist_id or not song_id:
+        return jsonify({"message": "playlist_id and song_id required"}), 400
+
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO playlist_songs (playlist_id, song_id) VALUES (?, ?)",
+            (playlist_id, song_id)
+        )
+        conn.commit()
+        return jsonify({"message": "Song added to playlist"})
+    except sqlite3.IntegrityError:
+        return jsonify({"message": "Song already in playlist"}), 400
+    finally:
+        conn.close()
+
+
+# ── Get songs in a playlist ───────────────────────────────
+@app.route("/playlists/<int:playlist_id>/songs", methods=["GET"])
+def get_playlist_songs(playlist_id):
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT songs.id, songs.title, songs.artist, songs.file_path, songs.genre
+        FROM playlist_songs
+        JOIN songs ON playlist_songs.song_id = songs.id
+        WHERE playlist_songs.playlist_id = ?
+    """, (playlist_id,))
+    songs = cursor.fetchall()
+    conn.close()
+
+    return jsonify([
+        {
+            "id": s[0],
+            "title": s[1],
+            "artist": s[2],
+            "file_path": s[3],
+            "genre": s[4] if len(s) > 4 else "Unknown"
+        }
+        for s in songs
+    ])
+
+
+# ── Delete a playlist ─────────────────────────────────────
+@app.route("/playlists/<int:playlist_id>", methods=["DELETE"])
+def delete_playlist(playlist_id):
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM playlist_songs WHERE playlist_id = ?", (playlist_id,))
+    cursor.execute("DELETE FROM playlists WHERE id = ?", (playlist_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Playlist deleted"})
+
+
+# ── Remove song from playlist ─────────────────────────────
+@app.route("/playlists/remove-song", methods=["DELETE"])
+def remove_song_from_playlist():
+    data = request.get_json()
+    playlist_id = data.get("playlist_id")
+    song_id = data.get("song_id")
+
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "DELETE FROM playlist_songs WHERE playlist_id = ? AND song_id = ?",
+        (playlist_id, song_id)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Song removed from playlist"})
+
+
+# ── Get all users (admin) ─────────────────────────────────
+@app.route("/admin/users", methods=["GET"])
+def get_all_users():
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, display_name, role FROM users")
+    users = cursor.fetchall()
+    conn.close()
+
+    return jsonify([
+        {
+            "id": u[0],
+            "email": u[1],
+            "display_name": u[2],
+            "role": u[3]
+        }
+        for u in users
+    ])
+
+
+# ── Delete a user (admin) ─────────────────────────────────
+@app.route("/admin/users/<int:user_id>", methods=["DELETE"])
+def delete_user(user_id):
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "User deleted"})
+
+
+# ── Add a song (admin) ────────────────────────────────────
+@app.route("/admin/songs", methods=["POST"])
+def add_song():
+    data = request.get_json()
+    title = data.get("title")
+    artist = data.get("artist")
+    file_path = data.get("file_path")
+    genre = data.get("genre", "Unknown")
+
+    if not title or not artist or not file_path:
+        return jsonify({"message": "title, artist and file_path required"}), 400
+
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO songs (title, artist, file_path, genre) VALUES (?, ?, ?, ?)",
+        (title, artist, file_path, genre)
+    )
+    conn.commit()
+    song_id = cursor.lastrowid
+    conn.close()
+
+    return jsonify({"message": "Song added", "id": song_id})
+
+
+# ── Delete a song (admin) ─────────────────────────────────
+@app.route("/admin/songs/<int:song_id>", methods=["DELETE"])
+def delete_song(song_id):
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM songs WHERE id = ?", (song_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"message": "Song deleted"})
+
+
+# ── Get dashboard stats (admin) ───────────────────────────
+@app.route("/admin/stats", methods=["GET"])
+def get_stats():
+    conn = sqlite3.connect("spotify.db")
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT COUNT(*) FROM users")
+    total_users = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM songs")
+    total_songs = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM favorites")
+    total_favorites = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM playlists")
+    total_playlists = cursor.fetchone()[0]
+
+    conn.close()
+
+    return jsonify({
+        "total_users": total_users,
+        "total_songs": total_songs,
+        "total_favorites": total_favorites,
+        "total_playlists": total_playlists,
+    })
+
+
+# ── Run server ────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(debug=True)
