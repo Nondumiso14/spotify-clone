@@ -6,6 +6,11 @@ import Search from "./pages/Search";
 import Library from "./pages/Library";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Profile from "./pages/Profile";
+import RecentlyPlayed from "./pages/RecentlyPlayed";
+import Favorites from "./pages/Favorites";
+
+
 
 
 function App() {
@@ -22,6 +27,9 @@ function App() {
           <Link to="/library">Your Library</Link>
           <Link to="/login">Login</Link>
           <Link to="/register">Register</Link>
+          <li><Link to="/profile">Profile</Link></li>
+          <li><Link to="/favorites">Favorites</Link></li>
+
           
           
         </div>
@@ -34,6 +42,9 @@ function App() {
             <Route path="/library" element={<Library />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/recently-played" element={<RecentlyPlayed />} />
+            <Route path="/favorites" element={<Favorites />} />
           </Routes>
         </div>
 

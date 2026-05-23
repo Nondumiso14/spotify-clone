@@ -1,58 +1,168 @@
-body {
+* {
   margin: 0;
-  font-family: Arial, sans-serif;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Circular', Arial, sans-serif;
+  background-color: #121212;
+  color: white;
 }
 
 .app {
   display: grid;
-  grid-template-columns: 200px 1fr;
-  grid-template-rows: 1fr 80px;
+  grid-template-columns: 240px 1fr;
+  grid-template-rows: 1fr 90px;
   height: 100vh;
+  overflow: hidden;
 }
 
-/* Sidebar */
+/* ── Sidebar ── */
 .sidebar {
   background-color: #000;
   color: white;
-  padding: 20px;
-  grid-row: 1 / 3;
+  padding: 24px 16px;
+  grid-row: 1 / 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
 }
 
-/* Main */
-.main {
-  background-color: #121212;
-  color: white;
-  padding: 20px;
-}
-
-/* Player */
-.player {
-  background-color: #181818;
-  color: white;
-  padding: 10px;
-  grid-column: 2;
+.sidebar h2 {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1DB954;
+  margin-bottom: 28px;
+  padding-left: 12px;
+  letter-spacing: -0.5px;
 }
 
 .sidebar a {
-  display: block;
-  color: white;
-  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #b3b3b3;
   text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px 12px;
+  border-radius: 6px;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  list-style: none;
 }
 
 .sidebar a:hover {
-  color: #1db954;
+  color: #fff;
+  background-color: #282828;
 }
 
-input {
-  padding: 10px;
-  width: 250px;
+.sidebar a.active {
+  color: #fff;
+  background-color: #282828;
 }
 
-button {
-  padding: 10px;
-  background-color: #1db954;
-  border: none;
+/* Remove bullet points from li items in sidebar */
+.sidebar li {
+  list-style: none;
+}
+
+/* Divider between nav groups */
+.sidebar-divider {
+  height: 1px;
+  background-color: #282828;
+  margin: 12px 0;
+}
+
+/* ── Main content ── */
+.main {
+  background-color: #121212;
   color: white;
+  overflow-y: auto;
+  grid-column: 2;
+  grid-row: 1 / 2;
+}
+
+/* ── Player bar ── */
+.player {
+  background-color: #181818;
+  border-top: 1px solid #282828;
+  color: white;
+  padding: 0 24px;
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.player p {
+  color: #b3b3b3;
+  font-size: 14px;
+}
+
+/* ── Inputs (global) ── */
+input[type="text"],
+input[type="email"],
+input[type="password"] {
+  background-color: #282828;
+  color: white;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus {
+  border-color: #1DB954;
+}
+
+input::placeholder {
+  color: #727272;
+}
+
+/* ── Buttons (global) ── */
+button {
+  padding: 10px 20px;
+  background-color: #1DB954;
+  border: none;
+  color: #000;
+  font-weight: 700;
+  font-size: 14px;
+  border-radius: 25px;
   cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+button:hover {
+  background-color: #1ed760;
+  transform: scale(1.02);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* ── Scrollbar styling ── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
